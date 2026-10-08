@@ -109,7 +109,7 @@ main {
 .model .m { font-family: var(--display); font-size: clamp(22px, 8.4cqw, 44px); letter-spacing: 1.5px; line-height: 1.05; overflow-wrap: anywhere; }
 .model .l { font-size: clamp(16px, 5.6cqw, 28px); color: var(--fg-dim); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
 
-.zones { display: grid; gap: clamp(6px, 1.2vh, 14px); border-top: 1px solid var(--line); padding-top: clamp(8px, 1.6vh, 18px); }
+.zones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(6px, 1.2vh, 14px); border-top: 1px solid var(--line); padding-top: clamp(8px, 1.6vh, 18px); }
 .zone { display: grid; grid-template-columns: 1fr auto; row-gap: 4px; align-items: baseline; }
 .zone .n { font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--fg-dim); font-size: clamp(13px, 5.2cqw, 24px); }
 .zone .v { font-family: var(--display); font-size: clamp(24px, 9cqw, 46px); line-height: 1; font-variant-numeric: tabular-nums; }
