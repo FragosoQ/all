@@ -6,7 +6,7 @@
 <title>Painel de Postos</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-/* Layout: 4 colunas verticais (PS1, PS2, PS3, PS5); % grande no topo, detalhe por baixo. Leitura à distância. */
+/* Layout: uma coluna por posto; % grande no topo, detalhe por baixo. Leitura à distância. */
 :root {
   --bg: #04080f;
   --bg-col: rgba(0,15,40,0.2);
@@ -55,7 +55,7 @@ header, footer {
 }
 header { border-bottom-width: 1px; }
 footer { border-top-width: 1px; }
-.brand { font-family: var(--display); font-size: clamp(24px, 3.4vh, 38px); letter-spacing: 6px; }
+.brand img { display: block; height: clamp(24px, 3.4vh, 38px); width: auto; max-width: 32vw; object-fit: contain; }
 .title { font-weight: 700; letter-spacing: 5px; text-transform: uppercase; color: var(--fg-dim); font-size: clamp(14px, 2vh, 20px); text-align: center; }
 .clock { font-size: clamp(16px, 2.4vh, 24px); letter-spacing: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .src { font-size: clamp(12px, 1.6vh, 15px); letter-spacing: 3px; text-transform: uppercase; color: var(--fg-dim); display: flex; align-items: center; gap: 10px; }
@@ -63,7 +63,7 @@ footer { border-top-width: 1px; }
 .src.live i { background: var(--green); box-shadow: 0 0 10px var(--green); }
 
 main {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
   min-height: 0;
 }
 .col {
@@ -119,6 +119,16 @@ main {
 .prio { display: grid; gap: 2px; }
 .prio .val { font-family: var(--display); font-size: clamp(20px, 7.4cqw, 38px); letter-spacing: 1.5px; line-height: 1.1; overflow-wrap: anywhere; }
 .prio .val.empty { color: var(--fg-faint); }
+.done-priorities { border-top: 1px solid var(--line); padding-top: clamp(8px, 1.6vh, 18px); display: grid; gap: 6px; }
+.done-priorities .items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 10px; }
+.done-priority { display: flex; justify-content: space-between; gap: 4px; color: var(--fg-dim); font-size: clamp(12px, 4.3cqw, 17px); font-variant-numeric: tabular-nums; }
+.done-priority strong { color: var(--fg); }
+.done-priority.empty { color: var(--fg-faint); }
+
+@media (max-width: 1200px) {
+  main { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .col:nth-child(3n + 1) { border-left: 0; }
+}
 
 @media (max-width: 1000px) {
   html, body { height: auto; }
@@ -146,7 +156,7 @@ main {
 <div class="bg-glow-right"></div>
 <div class="shell">
   <header>
-    <div class="brand">SOMENGIL</div>
+    <div class="brand"><img src="https://res.cloudinary.com/dlkkjtgvy/image/upload/v1780388780/somengil_logo_white_ofh0xi.png" alt="Somengil"></div>
     <div class="title">Soldadura · Progresso por Posto</div>
     <div class="clock" id="clock">--:--:--</div>
   </header>
@@ -164,14 +174,16 @@ const POSTOS = [
   { tab: 'PS1', nome: 'Posto 1' },
   { tab: 'PS2', nome: 'Posto 2' },
   { tab: 'PS3', nome: 'Posto 3' },
+  { tab: 'PS4', nome: 'Posto 4' },
   { tab: 'PS5', nome: 'Posto 5' },
 ];
 // Colunas lidas em cada separador (linha 2 da folha). Iguais às do painel PS1 original.
 const COLS = {
   chave: 'A', modeloLote: 'D', previsto: 'F', inicio: 'J',
   cuba: 'O', estrutura: 'P', interior: 'Q', envolventes: 'R',
-  geral: 'AK', prioridade: 'CI', proxima: 'CH',
+  geral: 'AK', proxima: 'CH',
 };
+const PRIORIDADE_COLS = { PS1: 'CI', PS2: 'CJ', PS3: 'CK', PS4: 'CL', PS5: 'CM' };
 const ZONAS = [['Cuba','cuba'],['Estrutura','estrutura'],['Interior','interior'],['Envolventes','envolventes']];
 
 /* ── helpers ── */
@@ -234,9 +246,22 @@ async function loadPosto(tab) {
   const text = await res.text();
   const m = text.match(/setResponse\((.*)\);?\s*$/s);
   if (!m) throw new Error('formato inválido');
-  const row = JSON.parse(m[1]).table.rows[0];
+  const table = JSON.parse(m[1]).table;
+  const row = table.rows[0];
   if (!row) throw new Error('sem linhas');
-  const get = key => { const c = row.c[colIdx(COLS[key])]; return c ? (c.v != null ? c.v : c.f != null ? c.f : null) : null; };
+  const get = key => { const col = key === 'prioridade' ? PRIORIDADE_COLS[tab] : COLS[key]; const c = row.c[colIdx(col)]; return c ? (c.v != null ? c.v : c.f != null ? c.f : null) : null; };
+  const postoId = Number(tab.slice(2));
+  const prioridadesRealizadas = [];
+  for (let i = colIdx('AL'); i <= colIdx('CE'); i += 2) {
+    const assigned = row.c[i];
+    const assignedTo = assigned && (assigned.v != null ? assigned.v : assigned.f);
+    if (assignedTo == null || String(assignedTo).trim() === '' || Number(assignedTo) !== postoId) continue;
+    const percent = row.c[i + 1];
+    prioridadesRealizadas.push({
+      nome: table.cols[i].label,
+      percentagem: parsePct(percent ? (percent.v != null ? percent.v : percent.f) : null),
+    });
+  }
   const ml = String(get('modeloLote') || '').trim();
   const mm = ml.match(/^(.*?)\s*-\s*(\d{2}L)$/);
   const txt = k => { const v = get(k); return v != null && String(v).trim() !== '' ? String(v).trim() : null; };
@@ -248,6 +273,7 @@ async function loadPosto(tab) {
     zonas: Object.fromEntries(ZONAS.map(([, k]) => [k, parsePct(get(k)) || 0])),
     inicio: parseDate(get('inicio')), previsto: parseDate(get('previsto')),
     prioridade: txt('prioridade'), proxima: txt('proxima'),
+    prioridadesRealizadas,
   };
 }
 
@@ -259,6 +285,7 @@ function demoData() {
     PS1: { ativo: true, modelo: 'MWS715 SDS EXD DRD', lote: '26L', geral: 46, zonas: { cuba: 100, estrutura: 62, interior: 20, envolventes: 0 }, inicio: off(-6), previsto: off(3), prioridade: 'Estrutura', proxima: 'Interior' },
     PS2: { ativo: true, modelo: 'MWS500 SDS', lote: '87L', geral: 82, zonas: { cuba: 100, estrutura: 100, interior: 70, envolventes: 58 }, inicio: off(-8), previsto: off(1), prioridade: 'Envolventes', proxima: 'Acabamento' },
     PS3: { ativo: true, modelo: 'MWS300 SD', lote: '12L', geral: 18, zonas: { cuba: 40, estrutura: 30, interior: 0, envolventes: 0 }, inicio: off(-2), previsto: off(7), prioridade: 'Cuba', proxima: 'Estrutura' },
+    PS4: { ativo: false, modelo: '', lote: null, geral: 0, zonas: { cuba: 0, estrutura: 0, interior: 0, envolventes: 0 }, inicio: null, previsto: null, prioridade: null, proxima: null },
     PS5: { ativo: false, modelo: '', lote: null, geral: 0, zonas: { cuba: 0, estrutura: 0, interior: 0, envolventes: 0 }, inicio: null, previsto: null, prioridade: null, proxima: null },
   };
 }
@@ -267,6 +294,8 @@ function demoData() {
 function renderCol(p, d) {
   const pct = d.geral == null ? 0 : d.geral;
   const c = colorFor(pct);
+  const prioridadesHtml = (d.prioridadesRealizadas || []).map(prio => `
+    <div class="done-priority"><span>${esc(prio.nome)}</span><strong>${prio.percentagem == null ? '—' : `${prio.percentagem}%`}</strong></div>`).join('');
   let prazoHtml;
   if (d.inicio && d.previsto) {
     const today = new Date(); today.setHours(0,0,0,0);
@@ -306,7 +335,11 @@ function renderCol(p, d) {
     </div>
     <div class="prazo">${prazoHtml}</div>
     ${prio('Prioridade ativa', d.prioridade)}
-    ${prio('Próxima prioridade', d.proxima)}`;
+    ${prio('Próxima prioridade', d.proxima)}
+    <div class="done-priorities">
+      <span class="k">Prioridades realizadas</span>
+      <div class="items">${prioridadesHtml || '<span class="done-priority empty">—</span>'}</div>
+    </div>`;
 }
 
 const mainEl = document.getElementById('postos');
