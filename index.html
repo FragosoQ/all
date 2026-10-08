@@ -97,6 +97,13 @@ main {
 .pct small { font-size: .4em; letter-spacing: 0; margin-left: .04em; }
 .big-bar { height: clamp(8px, 1.4vh, 14px); background: rgba(255,255,255,0.14); border-radius: 7px; overflow: hidden; }
 .big-bar > div { height: 100%; border-radius: 7px; transition: width .6s ease; }
+.priority-focus { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 5px 8px; border-block: 1px solid var(--line); padding-block: 6px; }
+.priority-focus .name { display: grid; gap: 2px; min-width: 0; }
+.priority-focus .task { font-size: clamp(15px, 4.8cqw, 22px); font-weight: 700; color: var(--fg); overflow-wrap: anywhere; }
+.priority-focus .value { font-family: var(--display); font-size: clamp(36px, 13cqw, 56px); line-height: 1; color: var(--cyan); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.priority-focus .value small { font-size: .55em; }
+.priority-focus .bar { grid-column: 1 / -1; height: 6px; background: rgba(255,255,255,0.14); border-radius: 4px; overflow: hidden; }
+.priority-focus .bar > div { height: 100%; border-radius: 4px; transition: width .6s ease; }
 
 .model { text-align: center; }
 .model .m { font-family: var(--display); font-size: clamp(22px, 8.4cqw, 44px); letter-spacing: 1.5px; line-height: 1.05; overflow-wrap: anywhere; }
@@ -144,7 +151,7 @@ main {
   .col { border-left: 0; }
   .pct { font-size: min(40cqw, 140px); }
 }
-@media (prefers-reduced-motion: reduce) { .big-bar > div, .zone .b > div { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .big-bar > div, .priority-focus .bar > div, .zone .b > div { transition: none; } }
 </style>
 </head>
 <body>
@@ -265,6 +272,9 @@ async function loadPosto(tab) {
   const ml = String(get('modeloLote') || '').trim();
   const mm = ml.match(/^(.*?)\s*-\s*(\d{2}L)$/);
   const txt = k => { const v = get(k); return v != null && String(v).trim() !== '' ? String(v).trim() : null; };
+  const priorityKey = value => String(value == null ? '' : value).trim().replace(/^P/i, '').replace(/[.,]/g, '_').toUpperCase();
+  const activePriorityKey = priorityKey(get('prioridade'));
+  const prioridadeEmCurso = prioridadesRealizadas.find(p => priorityKey(p.nome) === activePriorityKey) || null;
   return {
     ativo: !!txt('chave'),
     modelo: mm ? mm[1].trim() : (ml && !/^[-–—]+$/.test(ml) ? ml : ''),
@@ -273,7 +283,7 @@ async function loadPosto(tab) {
     zonas: Object.fromEntries(ZONAS.map(([, k]) => [k, parsePct(get(k)) || 0])),
     inicio: parseDate(get('inicio')), previsto: parseDate(get('previsto')),
     prioridade: txt('prioridade'), proxima: txt('proxima'),
-    prioridadesRealizadas,
+    prioridadesRealizadas, prioridadeEmCurso,
   };
 }
 
@@ -294,6 +304,9 @@ function demoData() {
 function renderCol(p, d) {
   const pct = d.geral == null ? 0 : d.geral;
   const c = colorFor(pct);
+  const priorityPct = d.prioridadeEmCurso?.percentagem;
+  const priorityLabel = d.prioridadeEmCurso?.nome || (d.prioridade && /^\d+(?:[.,]\d+)?$/.test(d.prioridade)
+    ? `P${d.prioridade.replace(/[.,]/g, '_')}` : d.prioridade) || '—';
   const prioridadesHtml = (d.prioridadesRealizadas || []).map(prio => `
     <div class="done-priority"><span>${esc(prio.nome)}</span><strong>${prio.percentagem == null ? '—' : `${prio.percentagem}%`}</strong></div>`).join('');
   let prazoHtml;
@@ -322,6 +335,11 @@ function renderCol(p, d) {
     </div>
     <div class="pct" style="color:${d.ativo ? c : 'var(--fg-faint)'}">${pct}<small>%</small></div>
     <div class="big-bar"><div style="width:${pct}%;background:${d.ativo ? c : 'var(--fg-faint)'}"></div></div>
+    <div class="priority-focus">
+      <div class="name"><span class="k">Prioridade em curso</span><span class="task">${esc(priorityLabel)}</span></div>
+      <span class="value">${priorityPct == null ? '—' : priorityPct}<small>${priorityPct == null ? '' : '%'}</small></span>
+      <div class="bar"><div style="width:${priorityPct == null ? 0 : priorityPct}%;background:${priorityPct == null ? 'transparent' : colorFor(priorityPct)}"></div></div>
+    </div>
     <div class="model">
       <div class="m">${esc(d.modelo || '—')}</div>
       <div class="l">${d.lote ? 'Lote · ' + esc(d.lote) : 'Sem lote'}</div>
