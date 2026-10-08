@@ -126,8 +126,8 @@ main {
 
 .zones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(6px, 1.2vh, 14px); border-top: 1px solid var(--line); padding-top: clamp(8px, 1.6vh, 18px); }
 .zone { display: grid; grid-template-columns: 1fr auto; row-gap: 4px; align-items: baseline; }
-.zone .n { font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--fg-dim); font-size: clamp(13px, 5.2cqw, 24px); }
-.zone .v { font-family: var(--display); font-size: clamp(24px, 9cqw, 46px); line-height: 1; font-variant-numeric: tabular-nums; }
+.zone .n { font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--fg-dim); font-size: clamp(8px, calc(5.2cqw - 5px), 19px); }
+.zone .v { font-family: var(--display); font-size: clamp(19px, calc(9cqw - 5px), 41px); line-height: 1; font-variant-numeric: tabular-nums; }
 .zone .b { grid-column: 1 / -1; height: clamp(5px, .9vh, 9px); background: rgba(255,255,255,0.12); border-radius: 5px; overflow: hidden; }
 .zone .b > div { height: 100%; border-radius: 5px; transition: width .6s ease; }
 
