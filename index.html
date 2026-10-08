@@ -95,6 +95,21 @@ main {
   padding-block: clamp(2px, 1vh, 12px);
 }
 .pct small { font-size: .4em; letter-spacing: 0; margin-left: .04em; }
+.next-priority {
+  align-self: flex-start;
+  display: grid;
+  gap: 2px;
+  max-width: 100%;
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.06);
+}
+.next-priority .k { font-size: clamp(11px, 3.8cqw, 16px); }
+.next-priority .value {
+  font-family: var(--display);
+  font-size: clamp(22px, 7cqw, 34px);
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
 .big-bar { height: clamp(8px, 1.4vh, 14px); background: rgba(255,255,255,0.14); border-radius: 7px; overflow: hidden; }
 .big-bar > div { height: 100%; border-radius: 7px; transition: width .6s ease; }
 .priority-focus { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 5px 8px; border-block: 1px solid var(--line); padding-block: 6px; }
@@ -123,9 +138,7 @@ main {
 .prazo .num span { color: var(--fg-faint); font-size: .6em; }
 .prazo .rest { font-weight: 700; letter-spacing: 2px; text-transform: uppercase; font-size: clamp(14px, 5.4cqw, 26px); text-align: right; }
 .dates { display: flex; justify-content: space-between; gap: 8px; color: var(--fg-dim); font-size: clamp(13px, 4.6cqw, 22px); letter-spacing: 1px; font-variant-numeric: tabular-nums; }
-.prio { display: grid; gap: 2px; }
-.prio .val { font-family: var(--display); font-size: clamp(20px, 7.4cqw, 38px); letter-spacing: 1.5px; line-height: 1.1; overflow-wrap: anywhere; }
-.prio .val.empty { color: var(--fg-faint); }
+.priority-grid { display: grid; grid-template-columns: minmax(0, 1fr); }
 .done-priorities { border-top: 1px solid var(--line); padding-top: clamp(8px, 1.6vh, 18px); display: grid; gap: 6px; }
 .done-priorities .items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 10px; }
 .done-priority { display: flex; justify-content: space-between; gap: 4px; color: var(--fg-dim); font-size: clamp(12px, 4.3cqw, 17px); font-variant-numeric: tabular-nums; }
@@ -326,11 +339,14 @@ function renderCol(p, d) {
   } else {
     prazoHtml = `<div class="row"><span class="k">Prazo</span><span class="rest" style="color:var(--fg-faint)">—</span></div>`;
   }
-  const prio = (k, v) => `<div class="prio"><span class="k">${k}</span><span class="val${v ? '' : ' empty'}">${esc(v || '—')}</span></div>`;
   return `
     <div class="posto-head">
       <div class="posto">${esc(p.nome)}</div>
       <span class="pill ${d.ativo ? 'on' : 'off'}">${d.ativo ? 'Em curso' : 'Standby'}</span>
+    </div>
+    <div class="next-priority">
+      <span class="k">Próxima prioridade</span>
+      <strong class="value">${esc(d.proxima || '—')}</strong>
     </div>
     <div class="pct" style="color:${d.ativo ? c : 'var(--fg-faint)'}">${pct}<small>%</small></div>
     <div class="big-bar"><div style="width:${pct}%;background:${d.ativo ? c : 'var(--fg-faint)'}"></div></div>
@@ -351,11 +367,11 @@ function renderCol(p, d) {
       }).join('')}
     </div>
     <div class="prazo">${prazoHtml}</div>
-    ${prio('Prioridade ativa', d.prioridade)}
-    ${prio('Próxima prioridade', d.proxima)}
-    <div class="done-priorities">
-      <span class="k">Prioridades realizadas</span>
-      <div class="items">${prioridadesHtml || '<span class="done-priority empty">—</span>'}</div>
+    <div class="priority-grid">
+      <div class="done-priorities">
+        <span class="k">Prioridades realizadas</span>
+        <div class="items">${prioridadesHtml || '<span class="done-priority empty">—</span>'}</div>
+      </div>
     </div>`;
 }
 
